@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Líder Supremo - Simulador de Governo</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="game-container">
+        <header>
+            <h1>Líder Supremo: <span id="country-name" contenteditable="true">Meu País</span></h1>
+            <p>Governe com mão de ferro ou coração de ouro.</p>
+        </header>
+
+        <main>
+            <section id="stats-dashboard">
+                <div class="stat-card" title="Saúde">
+                    <span class="icon">🏥</span>
+                    <div class="stat-info">
+                        <label>Saúde</label>
+                        <div class="progress-bar-bg"><div id="stat-health" class="progress-fill" style="width: 50%;"></div></div>
+                        <span id="value-health">50%</span>
+                    </div>
+                </div>
+                <div class="stat-card" title="Educação">
+                    <span class="icon">🎓</span>
+                    <div class="stat-info">
+                        <label>Educação</label>
+                        <div class="progress-bar-bg"><div id="stat-education" class="progress-fill" style="width: 50%;"></div></div>
+                        <span id="value-education">50%</span>
+                    </div>
+                </div>
+                <div class="stat-card" title="Segurança">
+                    <span class="icon">🛡️</span>
+                    <div class="stat-info">
+                        <label>Segurança</label>
+                        <div class="progress-bar-bg"><div id="stat-security" class="progress-fill" style="width: 50%;"></div></div>
+                        <span id="value-security">50%</span>
+                    </div>
+                </div>
+                <div class="stat-card" title="Economia">
+                    <span class="icon">💰</span>
+                    <div class="stat-info">
+                        <label>Economia</label>
+                        <div class="progress-bar-bg"><div id="stat-economy" class="progress-fill" style="width: 50%;"></div></div>
+                        <span id="value-economy">50%</span>
+                    </div>
+                </div>
+                <div class="stat-card approval" title="Aprovação Geral">
+                    <span class="icon">✊</span>
+                    <div class="stat-info">
+                        <label>Aprovação Geral</label>
+                        <div class="progress-bar-bg"><div id="stat-approval" class="progress-fill" style="width: 50%;"></div></div>
+                        <span id="value-approval">50%</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="middle-section">
+                <section id="ai-advisor">
+                    <h2>Conselheiro IA 🤖</h2>
+                    <div id="ai-content">
+                        <p id="ai-question">Aguardando novo dilema...</p>
+                        <div id="ai-options">
+                            <!-- Opções serão inseridas via JS -->
+                        </div>
+                        <div id="ai-feedback" class="hidden">
+                            <p id="feedback-text"></p>
+                            <button id="next-question">Entendido</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="charts-container">
+                    <h2>Estatísticas do País</h2>
+                    <canvas id="historyChart"></canvas>
+                </section>
+            </div>
+
+            <section id="management-section">
+                <div id="rules-management">
+                    <h2>Regras e Decretos 📜</h2>
+                    <div class="rule-input">
+                        <input type="text" id="new-rule-text" placeholder="Digite uma nova regra (ex: Saúde gratuita para todos)">
+                        <button id="add-rule">Decretar</button>
+                    </div>
+                    <ul id="rules-list">
+                        <!-- Regras inseridas via JS -->
+                    </ul>
+                </div>
+
+                <div id="privatization-management">
+                    <h2>Privatização 🏢</h2>
+                    <p>Decida o que deve ser estatal ou privado:</p>
+                    <div id="privatization-list">
+                        <!-- Itens de privatização via JS -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Simulador de Líder Supremo - Governe com Sabedoria</p>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
