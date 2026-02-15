@@ -5,7 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Líder Supremo - Simulador de Governo</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+      }
+    </script>
 </head>
 <body>
     <div id="feedback-modal" class="modal hidden">
@@ -28,10 +34,24 @@
         </div>
     </div>
 
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal" id="close-settings">&times;</span>
+            <h2>Configurações da IA ⚙️</h2>
+            <p>Para usar a IA real (Gemini), insira sua chave de API abaixo:</p>
+            <input type="password" id="api-key-input" placeholder="Cole sua chave aqui...">
+            <button id="save-settings" class="btn-primary">Salvar Chave</button>
+            <p class="small">Sua chave é salva apenas localmente no seu navegador.</p>
+        </div>
+    </div>
+
     <div id="game-container">
         <header>
-            <h1>Líder Supremo: <span id="country-name" contenteditable="true">Meu País</span></h1>
-            <p>Governe com mão de ferro ou coração de ouro.</p>
+            <div class="header-main">
+                <h1>Líder Supremo: <span id="country-name" contenteditable="true">Meu País</span></h1>
+                <p>Governe com mão de ferro ou coração de ouro.</p>
+            </div>
+            <button id="settings-btn" title="Configurações">⚙️</button>
         </header>
 
         <main>
@@ -107,6 +127,6 @@
             <p>&copy; 2024 Simulador de Líder Supremo - Governe com Sabedoria</p>
         </footer>
     </div>
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
