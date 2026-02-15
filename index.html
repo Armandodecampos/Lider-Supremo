@@ -21,8 +21,21 @@
             <input type="password" id="setup-api-key-input" placeholder="Cole sua chave aqui...">
             <button id="start-game" class="btn-primary">Iniciar Governo</button>
             <p class="small">Sua chave é salva apenas localmente no seu navegador e é necessária para que seu conselheiro funcione.</p>
+            <div id="no-script-error" class="error-msg" style="color: red; margin-top: 10px; display: none;">
+                ⚠️ O sistema não pôde carregar o script do conselheiro. Se você abriu o arquivo diretamente no navegador, tente usar um servidor local (ex: Live Server) ou um navegador diferente.
+            </div>
         </div>
     </div>
+    <script>
+        // Diagnostic inline script
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (typeof init === 'undefined' && !window.suppressScriptError) {
+                    document.getElementById('no-script-error').style.display = 'block';
+                }
+            }, 1500);
+        });
+    </script>
 
     <div id="feedback-modal" class="modal hidden">
         <div class="modal-content">
