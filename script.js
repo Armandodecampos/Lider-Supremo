@@ -24,17 +24,19 @@ let gameState = {
 
 // Update UI
 function updateUI() {
-    // Stats
-    for (let stat in gameState.stats) {
-        const val = Math.max(0, Math.min(100, gameState.stats[stat]));
-        gameState.stats[stat] = val; // Clamp
-        const bar = document.getElementById(`stat-${stat}`);
-        const text = document.getElementById(`value-${stat}`);
-        if (bar) bar.style.width = `${val}%`;
-        if (text) text.textContent = `${Math.round(val)}%`;
+    try {
+        // Stats
+        for (let stat in gameState.stats) {
+            const val = Math.max(0, Math.min(100, gameState.stats[stat]));
+            gameState.stats[stat] = val; // Clamp
+            const bar = document.getElementById(`stat-${stat}`);
+            const text = document.getElementById(`value-${stat}`);
+            if (bar) bar.style.width = `${val}%`;
+            if (text) text.textContent = `${Math.round(val)}%`;
+        }
+    } catch (e) {
+        console.error("Erro ao atualizar UI:", e);
     }
-
-
 }
 
 
@@ -256,109 +258,152 @@ function sendChatMessage() {
 }
 
 function checkApiKey() {
-    const apiKey = localStorage.getItem('gemini_api_key');
-    const setupModal = document.getElementById('setup-modal');
-    const gameContainer = document.getElementById('game-container');
+    try {
+        const apiKey = localStorage.getItem('gemini_api_key');
+        const setupModal = document.getElementById('setup-modal');
+        const gameContainer = document.getElementById('game-container');
 
-    if (apiKey) {
-        setupModal.classList.add('hidden');
-        gameContainer.classList.remove('hidden');
-    } else {
-        setupModal.classList.remove('hidden');
-        gameContainer.classList.add('hidden');
+        if (apiKey && apiKey.trim() !== '') {
+            if (setupModal) setupModal.classList.add('hidden');
+            if (gameContainer) gameContainer.classList.remove('hidden');
+            return true;
+        } else {
+            if (setupModal) setupModal.classList.remove('hidden');
+            if (gameContainer) gameContainer.classList.add('hidden');
+            return false;
+        }
+    } catch (e) {
+        console.error("Erro ao verificar API Key:", e);
+        return false;
     }
 }
 
-window.onload = () => {
-    checkApiKey();
-    updateUI();
+window.init = init;
+function init() {
+    console.log("Iniciando Simulador Líder Supremo...");
 
-
-    document.getElementById('send-chat').addEventListener('click', sendChatMessage);
-    document.getElementById('chat-input').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') sendChatMessage();
-    });
-
-    // Approval Modal Listeners
-    const modal = document.getElementById('feedback-modal');
-    const approvalCard = document.querySelector('.stat-card.approval');
-    const closeBtn = document.querySelector('.close-modal');
-
-    approvalCard.addEventListener('click', () => {
-        updateFeedbackModal();
-        modal.classList.remove('hidden');
-    });
-
-    closeBtn.addEventListener('click', () => {
-        modal.classList.add('hidden');
-    });
-
-    window.addEventListener('click', (event) => {
-        if (event.target == modal) {
-            modal.classList.add('hidden');
-        }
-    });
-
-    // Laws Modal Listeners
-    const lawsModal = document.getElementById('laws-modal');
-    const lawsBtn = document.getElementById('laws-btn');
-    const closeLaws = document.getElementById('close-laws');
-
-    lawsBtn.addEventListener('click', () => {
-        updateLawsModal();
-        lawsModal.classList.remove('hidden');
-    });
-
-    closeLaws.addEventListener('click', () => {
-        lawsModal.classList.add('hidden');
-    });
-
-    window.addEventListener('click', (event) => {
-        if (event.target == lawsModal) {
-            lawsModal.classList.add('hidden');
-        }
-    });
-
-    // Settings Modal Listeners
-    const settingsModal = document.getElementById('settings-modal');
-    const settingsBtn = document.getElementById('settings-btn');
-    const closeSettings = document.getElementById('close-settings');
-    const saveSettings = document.getElementById('save-settings');
-    const apiKeyInput = document.getElementById('api-key-input');
-
-    settingsBtn.addEventListener('click', () => {
-        apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
-        settingsModal.classList.remove('hidden');
-    });
-
-    closeSettings.addEventListener('click', () => {
-        settingsModal.classList.add('hidden');
-    });
-
-    saveSettings.addEventListener('click', () => {
-        localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
-        alert('Configurações salvas!');
-        settingsModal.classList.add('hidden');
-    });
-
-    window.addEventListener('click', (event) => {
-        if (event.target == settingsModal) {
-            settingsModal.classList.add('hidden');
-        }
-    });
-
-    // Setup Modal logic
+    // Setup Modal logic - Attached as early as possible
     const startGameBtn = document.getElementById('start-game');
     const setupApiKeyInput = document.getElementById('setup-api-key-input');
 
-    startGameBtn.addEventListener('click', () => {
-        const key = setupApiKeyInput.value.trim();
-        if (key) {
-            localStorage.setItem('gemini_api_key', key);
-            checkApiKey();
-            addMessageToChat("Bem-vindo, Líder Supremo. Sou seu conselheiro IA. O país aguarda suas ordens.", 'advisor');
-        } else {
-            alert("Por favor, insira uma chave de API válida para continuar.");
+    if (startGameBtn && setupApiKeyInput) {
+        startGameBtn.addEventListener('click', () => {
+            const key = setupApiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+                if (checkApiKey()) {
+                    addMessageToChat("Bem-vindo, Líder Supremo. Sou seu conselheiro IA. O país aguarda suas ordens.", 'advisor');
+                    updateUI();
+                }
+            } else {
+                alert("Por favor, insira uma chave de API válida para continuar.");
+            }
+        });
+    }
+
+    checkApiKey();
+    updateUI();
+
+    // Other Listeners
+    try {
+        const sendBtn = document.getElementById('send-chat');
+        if (sendBtn) sendBtn.addEventListener('click', sendChatMessage);
+
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendChatMessage();
+        });
+
+        // Approval Modal Listeners
+        const modal = document.getElementById('feedback-modal');
+        const approvalCard = document.querySelector('.stat-card.approval');
+        const closeBtn = document.querySelector('.close-modal');
+
+        if (approvalCard && modal) {
+            approvalCard.addEventListener('click', () => {
+                updateFeedbackModal();
+                modal.classList.remove('hidden');
+            });
         }
-    });
-};
+
+        if (closeBtn && modal) {
+            closeBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+        }
+
+        window.addEventListener('click', (event) => {
+            if (event.target == modal) {
+                modal.classList.add('hidden');
+            }
+        });
+
+        // Laws Modal Listeners
+        const lawsModal = document.getElementById('laws-modal');
+        const lawsBtn = document.getElementById('laws-btn');
+        const closeLaws = document.getElementById('close-laws');
+
+        if (lawsBtn && lawsModal) {
+            lawsBtn.addEventListener('click', () => {
+                updateLawsModal();
+                lawsModal.classList.remove('hidden');
+            });
+        }
+
+        if (closeLaws && lawsModal) {
+            closeLaws.addEventListener('click', () => {
+                lawsModal.classList.add('hidden');
+            });
+        }
+
+        window.addEventListener('click', (event) => {
+            if (event.target == lawsModal) {
+                lawsModal.classList.add('hidden');
+            }
+        });
+
+        // Settings Modal Listeners
+        const settingsModal = document.getElementById('settings-modal');
+        const settingsBtn = document.getElementById('settings-btn');
+        const closeSettings = document.getElementById('close-settings');
+        const saveSettings = document.getElementById('save-settings');
+        const apiKeyInput = document.getElementById('api-key-input');
+
+        if (settingsBtn && settingsModal) {
+            settingsBtn.addEventListener('click', () => {
+                apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+                settingsModal.classList.remove('hidden');
+            });
+        }
+
+        if (closeSettings && settingsModal) {
+            closeSettings.addEventListener('click', () => {
+                settingsModal.classList.add('hidden');
+            });
+        }
+
+        if (saveSettings && settingsModal) {
+            saveSettings.addEventListener('click', () => {
+                localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
+                alert('Configurações salvas!');
+                settingsModal.classList.add('hidden');
+                checkApiKey();
+            });
+        }
+
+        window.addEventListener('click', (event) => {
+            if (event.target == settingsModal) {
+                settingsModal.classList.add('hidden');
+            }
+        });
+    } catch (e) {
+        console.warn("Alguns ouvintes de eventos não puderam ser anexados:", e);
+    }
+}
+
+// Ensure init runs regardless of load event if script is loaded late
+if (document.readyState === 'loading') {
+    window.addEventListener('load', init);
+} else {
+    init();
+}
