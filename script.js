@@ -140,9 +140,28 @@ function addMessageToChat(text, sender) {
     chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
+async function testGeminiConnection(key) {
+    if (!key) return { success: false, message: "Chave vazia." };
+    try {
+        const genAI = new GoogleGenerativeAI(key);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent("Olá, responda apenas 'OK'.");
+        if (result.response.text()) {
+            return { success: true, message: "Conexão bem-sucedida!" };
+        }
+        return { success: false, message: "Resposta vazia da API." };
+    } catch (error) {
+        console.error("Erro no teste de conexão:", error);
+        let msg = "Falha na conexão.";
+        if (error.message.includes("API_KEY_INVALID")) msg = "Chave de API inválida.";
+        if (error.message.includes("429")) msg = "Muitas requisições (429). Aguarde.";
+        return { success: false, message: msg };
+    }
+}
+
 async function processAIWithGemini(message) {
     const apiKey = localStorage.getItem('gemini_api_key');
-    if (!apiKey) return null;
+    if (!apiKey) return { error: "Chave de API não encontrada." };
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
@@ -156,12 +175,12 @@ Turno atual: ${gameState.turn}.
 
 Regras de Impacto:
 - Seja realista: grandes mudanças custam caro ou afetam a aprovação.
-- Retorne SEMPRE um JSON válido no seguinte formato:
+- Retorne RIGOROSAMENTE APENAS o JSON no formato abaixo, sem explicações fora dele:
 {
   "response": "Sua resposta textual ao jogador, profunda e política.",
   "stats": { "health": delta, "education": delta, "security": delta, "economy": delta, "approval": delta },
-  "isLaw": true/false (se a mensagem criou uma nova lei ou decreto),
-  "report": "Um aviso ou relatório situacional curto se algo estiver crítico (opcional)"
+  "isLaw": true/false,
+  "report": "opcional"
 }
 Onde 'delta' é um número (ex: 5, -3.5, 0).`;
 
@@ -171,12 +190,21 @@ Onde 'delta' é um número (ex: 5, -3.5, 0).`;
         // Find JSON in response (Gemini sometimes adds markdown blocks)
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-            return JSON.parse(jsonMatch[0]);
+            try {
+                return JSON.parse(jsonMatch[0]);
+            } catch (e) {
+                console.error("Erro ao processar JSON da IA:", responseText);
+                return { error: "O conselheiro enviou um relatório em formato inválido." };
+            }
         }
-        return null;
+        return { error: "O conselheiro não respondeu adequadamente. Tente novamente." };
     } catch (error) {
         console.error("Erro na API Gemini:", error);
-        return null;
+        let errorMsg = "Erro na comunicação com o núcleo da IA.";
+        if (error.message.includes("API_KEY_INVALID")) errorMsg = "Sua Chave de API é inválida.";
+        if (error.message.includes("429")) errorMsg = "Limite de requisições excedido. Aguarde um momento.";
+        if (error.message.includes("safety")) errorMsg = "A resposta foi bloqueada pelos filtros de segurança da IA.";
+        return { error: errorMsg };
     }
 }
 
@@ -194,7 +222,7 @@ Destaque problemas, avisos ou informações importantes.
 Estatísticas atuais: Saúde: ${gameState.stats.health}%, Educação: ${gameState.stats.education}%, Segurança: ${gameState.stats.security}%, Economia: ${gameState.stats.economy}%, Aprovação: ${gameState.stats.approval}%.
 Leis ativas: ${gameState.laws.join(', ') || 'Nenhuma'}.
 
-Formato de resposta: JSON
+Retorne APENAS JSON:
 {
   "report": "Texto do seu relatório aqui."
 }`;
@@ -203,8 +231,12 @@ Formato de resposta: JSON
         const responseText = result.response.text();
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-            const data = JSON.parse(jsonMatch[0]);
-            addMessageToChat(`📋 RELATÓRIO DE ESTADO (Mês ${gameState.turn}): ${data.report}`, 'advisor');
+            try {
+                const data = JSON.parse(jsonMatch[0]);
+                addMessageToChat(`📋 RELATÓRIO DE ESTADO (Mês ${gameState.turn}): ${data.report}`, 'advisor');
+            } catch (e) {
+                console.error("Erro ao parsear relatório situacional:", responseText);
+            }
         }
     } catch (error) {
         console.error("Erro ao gerar relatório:", error);
@@ -213,29 +245,31 @@ Formato de resposta: JSON
 
 async function processAIAdvisor(message) {
     // Try Gemini
-    const geminiResponse = await processAIWithGemini(message);
+    const result = await processAIWithGemini(message);
 
-    if (geminiResponse) {
+    if (result && !result.error) {
         // Apply stats from Gemini
-        if (geminiResponse.stats) {
-            for (let stat in geminiResponse.stats) {
+        if (result.stats) {
+            for (let stat in result.stats) {
                 if (gameState.stats[stat] !== undefined) {
-                    gameState.stats[stat] += geminiResponse.stats[stat];
+                    gameState.stats[stat] += result.stats[stat];
                 }
             }
         }
 
         // Check if it's a law
-        if (geminiResponse.isLaw) {
+        if (result.isLaw) {
             gameState.laws.push(message);
         }
 
-        addMessageToChat(geminiResponse.response, 'advisor');
-        if (geminiResponse.report) {
-            setTimeout(() => addMessageToChat(`📢 RELATÓRIO: ${geminiResponse.report}`, 'advisor'), 1000);
+        addMessageToChat(result.response, 'advisor');
+        if (result.report && result.report !== "opcional") {
+            setTimeout(() => addMessageToChat(`📢 RELATÓRIO: ${result.report}`, 'advisor'), 1000);
         }
     } else {
-        addMessageToChat("Desculpe, Líder Supremo. Houve um erro na comunicação com meu núcleo de processamento. Verifique sua conexão e chave de API.", 'advisor');
+        const msg = result ? result.error : "Erro desconhecido no conselheiro.";
+        addMessageToChat(`🚫 FALHA NO CONSELHEIRO: ${msg}`, 'advisor');
+        addMessageToChat("Dica: Verifique se sua chave de API está correta nas configurações (ícone de engrenagem).", 'advisor');
     }
 
     recordHistory();
@@ -299,6 +333,18 @@ function init() {
                 alert("Por favor, insira uma chave de API válida para continuar.");
             }
         });
+
+        const testBtn = document.getElementById('test-key-setup');
+        if (testBtn) {
+            testBtn.addEventListener('click', async () => {
+                testBtn.disabled = true;
+                testBtn.textContent = "Testando...";
+                const res = await testGeminiConnection(setupApiKeyInput.value.trim());
+                alert(res.message);
+                testBtn.disabled = false;
+                testBtn.textContent = "Testar Chave";
+            });
+        }
     }
 
     checkApiKey();
@@ -388,6 +434,18 @@ function init() {
                 alert('Configurações salvas!');
                 settingsModal.classList.add('hidden');
                 checkApiKey();
+            });
+        }
+
+        const testSettingsBtn = document.getElementById('test-key-settings');
+        if (testSettingsBtn) {
+            testSettingsBtn.addEventListener('click', async () => {
+                testSettingsBtn.disabled = true;
+                testSettingsBtn.textContent = "Testando...";
+                const res = await testGeminiConnection(apiKeyInput.value.trim());
+                alert(res.message);
+                testSettingsBtn.disabled = false;
+                testSettingsBtn.textContent = "Testar Chave";
             });
         }
 
