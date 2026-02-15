@@ -187,6 +187,27 @@ button {
     transition: background 0.3s;
 }
 
+#laws-btn.stat-card {
+    background: var(--card-bg);
+    border: none;
+    font-family: inherit;
+    text-align: left;
+}
+
+#laws-list {
+    list-style: none;
+    padding: 0;
+}
+
+#laws-list li {
+    background: #f9f9f9;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border-left: 5px solid var(--primary-color);
+    color: var(--text-color);
+}
+
 #management-section {
     display: grid;
     grid-template-columns: 1fr 1fr;
