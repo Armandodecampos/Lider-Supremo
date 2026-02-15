@@ -39,17 +39,7 @@ function updateUI() {
 
 
 function applyLawsPassiveImpact() {
-    gameState.laws.forEach(law => {
-        const lowerLaw = law.toLowerCase();
-        keywords.forEach(k => {
-            if (lowerLaw.includes(k.word)) {
-                // Laws have a smaller per-turn impact (10% of immediate impact)
-                for (let stat in k.stats) {
-                    gameState.stats[stat] += k.stats[stat] * 0.1;
-                }
-            }
-        });
-    });
+    // Passive impact could be implemented here in the future
 }
 
 function recordHistory() {
@@ -63,26 +53,6 @@ function recordHistory() {
     gameState.history.approval.push(gameState.stats.approval);
 }
 
-// Keyword matching system for custom rules
-const keywords = [
-    { word: 'saúde', stats: { health: 8, economy: -4, approval: 5 }, consequence: "O aumento na saúde atraiu refugiados buscando tratamento. O que faremos?" },
-    { word: 'hospital', stats: { health: 10, economy: -5, approval: 5 }, consequence: "Os novos hospitais estão sem suprimentos básicos. Como resolver?" },
-    { word: 'escola', stats: { education: 8, economy: -4, approval: 5 }, consequence: "As novas escolas estão sendo usadas para doutrinação política. Devemos intervir?" },
-    { word: 'educação', stats: { education: 10, economy: -5, approval: 5 }, consequence: "Professores exigem autonomia total no currículo. O que o senhor diz?" },
-    { word: 'segurança', stats: { security: 8, economy: -4, approval: 5 }, consequence: "A repressão aumentou, mas o crime organizado está revidando. Mais força?" },
-    { word: 'polícia', stats: { security: 10, economy: -5, approval: 5 }, consequence: "A polícia pede tanques para patrulhar as favelas. Autorizamos?" },
-    { word: 'arma', stats: { security: 5, approval: -5 }, consequence: "O mercado negro de armas está florescendo. Como lidar com isso?" },
-    { word: 'imposto', stats: { economy: 10, approval: -10 }, consequence: "Os ricos estão fugindo do país para evitar as taxas. Fechamos as fronteiras?" },
-    { word: 'taxa', stats: { economy: 10, approval: -10 }, consequence: "Pequenos comerciantes estão falindo devido aos novos custos. Auxílio ou ignorar?" },
-    { word: 'grátis', stats: { approval: 10, economy: -10 }, consequence: "O 'grátis' gerou filas quilométricas. Como racionar o atendimento?" },
-    { word: 'proibir', stats: { security: 5, approval: -5 }, consequence: "A proibição gerou um mercado paralelo lucrativo. Como agir?" },
-    { word: 'morte', stats: { security: 10, approval: -15 }, consequence: "Grupos de direitos humanos iniciaram protestos globais contra nós." },
-    { word: 'liberdade', stats: { approval: 10, security: -5 }, consequence: "A liberdade excessiva resultou em caos e desordem nas ruas." },
-    { word: 'privatizar', stats: { economy: 12, approval: -8 }, consequence: "As empresas privadas demitiram milhares para lucrar mais." },
-    { word: 'estatizar', stats: { economy: -12, approval: 8 }, consequence: "A corrupção nas estatais está drenando nossos cofres rapidamente." },
-    { word: 'punição', stats: { security: 5, approval: -2 }, consequence: "Presídios superlotados estão à beira de uma rebelião sangrenta." },
-    { word: 'trabalho', stats: { economy: 5, approval: 2 }, consequence: "Sindicatos exigem redução de jornada. Como o senhor responde?" }
-];
 
 
 function updateLawsModal() {
@@ -240,9 +210,7 @@ Formato de resposta: JSON
 }
 
 async function processAIAdvisor(message) {
-    const lowerMessage = message.toLowerCase();
-
-    // Try Gemini first
+    // Try Gemini
     const geminiResponse = await processAIWithGemini(message);
 
     if (geminiResponse) {
@@ -265,41 +233,7 @@ async function processAIAdvisor(message) {
             setTimeout(() => addMessageToChat(`📢 RELATÓRIO: ${geminiResponse.report}`, 'advisor'), 1000);
         }
     } else {
-        // Fallback to keyword engine
-        const lawKeywords = ['lei', 'decreto', 'proibir', 'aprovar', 'liberar', 'taxar', 'investir', 'ordeno', 'quero'];
-        const isLaw = lawKeywords.some(kw => lowerMessage.includes(kw));
-
-        if (isLaw) {
-            gameState.laws.push(message);
-        }
-
-        let matchedKeywords = [];
-        let consequenceText = "";
-
-        keywords.forEach(k => {
-            if (lowerMessage.includes(k.word)) {
-                for (let stat in k.stats) {
-                    gameState.stats[stat] += k.stats[stat];
-                }
-                matchedKeywords.push(k.word);
-                if (k.consequence) consequenceText = k.consequence;
-            }
-        });
-
-        let response = "";
-        if (matchedKeywords.length > 0) {
-            response = `Entendido, Líder. (Modo Offline) Apliquei as medidas solicitadas.`;
-            if (consequenceText) {
-                response += ` No entanto: ${consequenceText}`;
-            }
-        } else if (isLaw) {
-            response = "Decreto anotado, Líder. (Modo Offline) Embora eu não tenha projeções exatas, sua vontade será cumprida.";
-            gameState.stats.approval += 1;
-            gameState.stats.economy -= 0.5;
-        } else {
-            response = "Entendo sua visão, Líder Supremo. (Modo Offline) Vou analisar como podemos integrar isso em nossa estratégia.";
-        }
-        addMessageToChat(response, 'advisor');
+        addMessageToChat("Desculpe, Líder Supremo. Houve um erro na comunicação com meu núcleo de processamento. Verifique sua conexão e chave de API.", 'advisor');
     }
 
     recordHistory();
@@ -321,7 +255,22 @@ function sendChatMessage() {
     }
 }
 
+function checkApiKey() {
+    const apiKey = localStorage.getItem('gemini_api_key');
+    const setupModal = document.getElementById('setup-modal');
+    const gameContainer = document.getElementById('game-container');
+
+    if (apiKey) {
+        setupModal.classList.add('hidden');
+        gameContainer.classList.remove('hidden');
+    } else {
+        setupModal.classList.remove('hidden');
+        gameContainer.classList.add('hidden');
+    }
+}
+
 window.onload = () => {
+    checkApiKey();
     updateUI();
 
 
@@ -395,6 +344,21 @@ window.onload = () => {
     window.addEventListener('click', (event) => {
         if (event.target == settingsModal) {
             settingsModal.classList.add('hidden');
+        }
+    });
+
+    // Setup Modal logic
+    const startGameBtn = document.getElementById('start-game');
+    const setupApiKeyInput = document.getElementById('setup-api-key-input');
+
+    startGameBtn.addEventListener('click', () => {
+        const key = setupApiKeyInput.value.trim();
+        if (key) {
+            localStorage.setItem('gemini_api_key', key);
+            checkApiKey();
+            addMessageToChat("Bem-vindo, Líder Supremo. Sou seu conselheiro IA. O país aguarda suas ordens.", 'advisor');
+        } else {
+            alert("Por favor, insira uma chave de API válida para continuar.");
         }
     });
 };
