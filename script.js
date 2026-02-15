@@ -209,86 +209,50 @@ function applyPrivatizationImpact(sector) {
         if (sector.id === 'police' || sector.id === 'prisons') gameState.stats.security += 5;
     }
 }
-const aiScenarios = [
-    {
-        question: "O que vamos fazer com quem vai preso?",
-        options: [
-            { text: "Trabalho forçado em minas", feedback: "A população aprovou que os presidiários devem trabalhar quebrando pedra.", stats: { security: 10, economy: 5, approval: -5 } },
-            { text: "Reabilitação educacional", feedback: "Muitos acham que o líder está sendo benevolente demais.", stats: { security: -5, education: 10, approval: 5 } },
-            { text: "Pena de morte", feedback: "O medo tomou conta das ruas, a criminalidade caiu mas a tensão é alta.", stats: { security: 15, approval: -15 } }
-        ]
-    },
-    {
-        question: "Qual a pena para quem furtar uma fruta no mercado?",
-        options: [
-            { text: "Multa pesada", feedback: "A economia agradece, mas os pobres sofrem.", stats: { economy: 5, approval: -2 } },
-            { text: "Corte da mão", feedback: "A criminalidade despencou, mas o mundo nos vê como bárbaros.", stats: { security: 20, approval: -20 } },
-            { text: "Trabalho comunitário", feedback: "A população aprova a justiça restaurativa.", stats: { approval: 10, security: 2 } }
-        ]
-    },
-    {
-        question: "Vamos privatizar as escolas públicas?",
-        options: [
-            { text: "Sim, tudo privado", feedback: "Eficiência máxima, mas nem todos podem pagar.", stats: { economy: 15, education: -5, approval: -10 } },
-            { text: "Não, manter estatal", feedback: "Educação para todos, mas o custo é alto.", stats: { economy: -10, education: 10, approval: 10 } },
-            { text: "Sistema híbrido", feedback: "Um equilíbrio difícil de manter.", stats: { economy: 2, education: 2, approval: 5 } }
-        ]
-    },
-    {
-        question: "Os médicos estão reclamando de baixos salários. O que fazer?",
-        options: [
-            { text: "Aumentar salários", feedback: "A saúde melhorou, mas os cofres públicos sentiram.", stats: { health: 15, economy: -10, approval: 8 } },
-            { text: "Obrigar trabalho por decreto", feedback: "Os médicos estão insatisfeitos e trabalhando mal.", stats: { health: -10, security: 5, approval: -15 } },
-            { text: "Privatizar hospitais", feedback: "Qualidade aumentou para quem pode pagar.", stats: { economy: 10, health: -5, approval: -5 } }
-        ]
-    },
-    {
-        question: "A população está reclamando de assaltos constantes.",
-        options: [
-            { text: "Mais policiais nas ruas", feedback: "Sensação de segurança aumentou.", stats: { security: 12, economy: -5, approval: 10 } },
-            { text: "Instalar câmeras em todo lugar", feedback: "Vigilância total. Privacidade zero.", stats: { security: 15, approval: -5 } },
-            { text: "Liberar porte de armas", feedback: "A população agora se defende, mas a violência aumentou.", stats: { security: -5, approval: 5 } }
-        ]
-    }
-];
 
-let currentScenarioIndex = -1;
-
-function nextAIQuestion() {
-    currentScenarioIndex = (currentScenarioIndex + 1) % aiScenarios.length;
-    const scenario = aiScenarios[currentScenarioIndex];
-
-    document.getElementById('ai-question').textContent = scenario.question;
-    const optionsDiv = document.getElementById('ai-options');
-    optionsDiv.innerHTML = '';
-
-    scenario.options.forEach((opt, idx) => {
-        const btn = document.createElement('button');
-        btn.textContent = opt.text;
-        btn.onclick = () => selectOption(idx);
-        optionsDiv.appendChild(btn);
-    });
+function addMessageToChat(text, sender) {
+    const chatHistory = document.getElementById('chat-history');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${sender}-message`;
+    msgDiv.textContent = text;
+    chatHistory.appendChild(msgDiv);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
-function selectOption(index) {
-    const scenario = aiScenarios[currentScenarioIndex];
-    const option = scenario.options[index];
+function processAIAdvisor(message) {
+    const lowerMessage = message.toLowerCase();
+    let response = "";
+    let matchedKeywords = [];
 
-    // Apply stats
-    for (let stat in option.stats) {
-        gameState.stats[stat] += option.stats[stat];
+    keywords.forEach(k => {
+        if (lowerMessage.includes(k.word)) {
+            for (let stat in k.stats) {
+                gameState.stats[stat] += k.stats[stat];
+            }
+            matchedKeywords.push(k.word);
+        }
+    });
+
+    if (matchedKeywords.length > 0) {
+        response = `Compreendido, Líder. Tomei as medidas necessárias sobre: ${matchedKeywords.join(', ')}. As estatísticas do país foram atualizadas.`;
+        recordHistory();
+        updateUI();
+    } else {
+        // Generic response
+        response = "Entendo sua preocupação, Líder Supremo. No momento não tenho recomendações específicas sobre esse assunto, mas continuarei monitorando a situação.";
     }
 
-    // Feedback
-    document.getElementById('ai-question').classList.add('hidden');
-    document.getElementById('ai-options').classList.add('hidden');
+    addMessageToChat(response, 'advisor');
+}
 
-    const feedbackDiv = document.getElementById('ai-feedback');
-    feedbackDiv.classList.remove('hidden');
-    document.getElementById('feedback-text').textContent = option.feedback;
-
-    recordHistory();
-    updateUI();
+function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (text) {
+        addMessageToChat(text, 'user');
+        processAIAdvisor(text);
+        input.value = '';
+    }
 }
 
 window.onload = () => {
@@ -307,13 +271,8 @@ window.onload = () => {
         }
     });
 
-    document.getElementById('next-question').addEventListener('click', () => {
-        document.getElementById('ai-feedback').classList.add('hidden');
-        document.getElementById('ai-options').classList.remove('hidden');
-        document.getElementById('ai-question').classList.remove('hidden');
-        nextAIQuestion();
+    document.getElementById('send-chat').addEventListener('click', sendChatMessage);
+    document.getElementById('chat-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendChatMessage();
     });
-
-    // Iniciar primeira pergunta
-    nextAIQuestion();
 };

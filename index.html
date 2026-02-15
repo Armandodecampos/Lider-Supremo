@@ -62,13 +62,12 @@
                 <section id="ai-advisor">
                     <h2>Conselheiro IA 🤖</h2>
                     <div id="ai-content">
-                        <p id="ai-question">Aguardando novo dilema...</p>
-                        <div id="ai-options">
-                            <!-- Opções serão inseridas via JS -->
+                        <div id="chat-history">
+                            <div class="message advisor-message">Olá, Líder Supremo. Como posso ajudá-lo hoje?</div>
                         </div>
-                        <div id="ai-feedback" class="hidden">
-                            <p id="feedback-text"></p>
-                            <button id="next-question">Entendido</button>
+                        <div id="chat-input-area">
+                            <input type="text" id="chat-input" placeholder="Pergunte ou ordene algo ao conselheiro...">
+                            <button id="send-chat">Enviar</button>
                         </div>
                     </div>
                 </section>

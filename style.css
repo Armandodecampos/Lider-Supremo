@@ -119,11 +119,51 @@ main {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-#ai-options {
+#chat-history {
+    height: 300px;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-top: 15px;
+    padding: 10px;
+    background: #f4f4f4;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.message {
+    padding: 10px;
+    border-radius: 8px;
+    max-width: 80%;
+}
+
+.user-message {
+    align-self: flex-end;
+    background: var(--secondary-color);
+    color: white;
+}
+
+.advisor-message {
+    align-self: flex-start;
+    background: #ddd;
+    color: #333;
+}
+
+#chat-input-area {
+    display: flex;
+    gap: 10px;
+}
+
+#chat-input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+#send-chat {
+    background: var(--primary-color);
+    color: white;
 }
 
 button {
@@ -133,22 +173,6 @@ button {
     cursor: pointer;
     font-weight: bold;
     transition: background 0.3s;
-}
-
-#ai-options button {
-    background: var(--secondary-color);
-    color: white;
-    text-align: left;
-}
-
-#ai-options button:hover {
-    background: var(--primary-color);
-}
-
-#next-question {
-    background: var(--accent-color);
-    color: var(--secondary-color);
-    margin-top: 15px;
 }
 
 #management-section {
