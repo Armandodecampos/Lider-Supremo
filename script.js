@@ -15,15 +15,6 @@ let gameState = {
         approval: [50],
         labels: ['Início']
     },
-    rules: [],
-    sectors: [
-        { id: 'schools', name: 'Escolas', private: false },
-        { id: 'hospitals', name: 'Hospitais', private: false },
-        { id: 'prisons', name: 'Presídios', private: false },
-        { id: 'energy', name: 'Energia', private: false },
-        { id: 'water', name: 'Água e Saneamento', private: false },
-        { id: 'police', name: 'Segurança Pública', private: false }
-    ],
     turn: 1
 };
 
@@ -65,39 +56,6 @@ function updateUI() {
         if (text) text.textContent = `${Math.round(val)}%`;
     }
 
-    // Rules
-    const rulesList = document.getElementById('rules-list');
-    rulesList.innerHTML = '';
-    gameState.rules.forEach((rule, index) => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <span>${rule}</span>
-            <div class="rule-actions">
-                <button class="edit-btn" onclick="editRule(${index})">Editar</button>
-                <button class="delete-btn" onclick="deleteRule(${index})">Deletar</button>
-            </div>
-        `;
-        rulesList.appendChild(li);
-    });
-
-    // Privatization
-    const privList = document.getElementById('privatization-list');
-    privList.innerHTML = '';
-    gameState.sectors.forEach((sector) => {
-        const div = document.createElement('div');
-        div.className = 'privatization-item';
-        div.innerHTML = `
-            <span>${sector.name}</span>
-            <div class="toggle-container">
-                <span>${sector.private ? 'Privado' : 'Estatal'}</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" ${sector.private ? 'checked' : ''} onchange="togglePrivatization('${sector.id}')">
-                    <span class="slider"></span>
-                </label>
-            </div>
-        `;
-        privList.appendChild(div);
-    });
 
     // Update Chart
     if (historyChart) {
@@ -116,33 +74,6 @@ function updateUI() {
     }
 }
 
-// Global functions for event listeners
-window.editRule = function(index) {
-    const newText = prompt("Edite o decreto:", gameState.rules[index]);
-    if (newText !== null && newText.trim() !== "") {
-        gameState.rules[index] = newText.trim();
-        applyRuleImpact(newText);
-        recordHistory();
-        updateUI();
-    }
-};
-
-window.deleteRule = function(index) {
-    if (confirm("Tem certeza que deseja revogar este decreto?")) {
-        gameState.rules.splice(index, 1);
-        updateUI();
-    }
-};
-
-window.togglePrivatization = function(id) {
-    const sector = gameState.sectors.find(s => s.id === id);
-    if (sector) {
-        sector.private = !sector.private;
-        applyPrivatizationImpact(sector);
-        recordHistory();
-        updateUI();
-    }
-};
 
 function recordHistory() {
     gameState.turn++;
@@ -175,38 +106,64 @@ const keywords = [
     { word: 'trabalho', stats: { economy: 5, approval: 2 } }
 ];
 
-function applyRuleImpact(rule) {
-    const lowerRule = rule.toLowerCase();
-    let impacted = false;
-    keywords.forEach(k => {
-        if (lowerRule.includes(k.word)) {
-            for (let stat in k.stats) {
-                gameState.stats[stat] += k.stats[stat];
-            }
-            impacted = true;
+
+function updateFeedbackModal() {
+    const details = document.getElementById('feedback-details');
+    details.innerHTML = '';
+
+    const feedbacks = [
+        {
+            stat: 'health',
+            low: "🏥 O povo reclama das filas intermináveis e da falta de médicos.",
+            high: "🏥 Nossos hospitais são motivo de orgulho nacional!",
+            neutral: "🏥 O sistema de saúde funciona, mas poderia ser melhor."
+        },
+        {
+            stat: 'education',
+            low: "🎓 Escolas abandonadas e professores em greve. O futuro está em risco.",
+            high: "🎓 Nossa juventude está sendo preparada para liderar o mundo.",
+            neutral: "🎓 A educação segue estável, com desafios pontuais."
+        },
+        {
+            stat: 'security',
+            low: "🛡️ A criminalidade assusta as famílias. Ninguém quer sair de casa.",
+            high: "🛡️ A paz reina em nossas ruas graças à segurança eficiente.",
+            neutral: "🛡️ A segurança é razoável, mas ainda há crimes comuns."
+        },
+        {
+            stat: 'economy',
+            low: "💰 Preços subindo e desemprego em alta. O povo está sofrendo.",
+            high: "💰 Economia forte e oportunidades para todos!",
+            neutral: "💰 As finanças do país estão equilibradas no momento."
         }
+    ];
+
+    feedbacks.forEach(f => {
+        const val = gameState.stats[f.stat];
+        let text = "";
+        let type = "";
+        if (val < 40) {
+            text = f.low;
+            type = "negative";
+        } else if (val > 70) {
+            text = f.high;
+            type = "positive";
+        } else {
+            text = f.neutral;
+            type = "neutral";
+        }
+
+        const div = document.createElement('div');
+        div.className = `feedback-item ${type}`;
+        div.textContent = text;
+        details.appendChild(div);
     });
 
-    if (!impacted) {
-        // Generic impact if no keywords found
-        gameState.stats.approval += 1;
-        gameState.stats.economy -= 0.5;
-    }
-}
-
-function applyPrivatizationImpact(sector) {
-    if (sector.private) {
-        gameState.stats.economy += 10;
-        gameState.stats.approval -= 5;
-        if (sector.id === 'schools') gameState.stats.education -= 5;
-        if (sector.id === 'hospitals') gameState.stats.health -= 5;
-        if (sector.id === 'police' || sector.id === 'prisons') gameState.stats.security -= 5;
-    } else {
-        gameState.stats.economy -= 10;
-        gameState.stats.approval += 5;
-        if (sector.id === 'schools') gameState.stats.education += 5;
-        if (sector.id === 'hospitals') gameState.stats.health += 5;
-        if (sector.id === 'police' || sector.id === 'prisons') gameState.stats.security += 5;
+    if (gameState.stats.approval < 40) {
+        const warning = document.createElement('div');
+        warning.className = "feedback-item negative";
+        warning.innerHTML = "<strong>⚠️ AVISO: A insatisfação popular pode levar a uma revolta!</strong>";
+        details.appendChild(warning);
     }
 }
 
@@ -259,20 +216,29 @@ window.onload = () => {
     initChart();
     updateUI();
 
-    document.getElementById('add-rule').addEventListener('click', () => {
-        const input = document.getElementById('new-rule-text');
-        const ruleText = input.value.trim();
-        if (ruleText) {
-            gameState.rules.push(ruleText);
-            applyRuleImpact(ruleText);
-            recordHistory();
-            updateUI();
-            input.value = '';
-        }
-    });
 
     document.getElementById('send-chat').addEventListener('click', sendChatMessage);
     document.getElementById('chat-input').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') sendChatMessage();
+    });
+
+    // Approval Modal Listeners
+    const modal = document.getElementById('feedback-modal');
+    const approvalCard = document.querySelector('.stat-card.approval');
+    const closeBtn = document.querySelector('.close-modal');
+
+    approvalCard.addEventListener('click', () => {
+        updateFeedbackModal();
+        modal.classList.remove('hidden');
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target == modal) {
+            modal.classList.add('hidden');
+        }
     });
 };

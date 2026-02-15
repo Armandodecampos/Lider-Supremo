@@ -8,6 +8,16 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <div id="feedback-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Relatório de Aprovação Popular ✊</h2>
+            <div id="feedback-details">
+                <!-- Feedback será inserido via JS -->
+            </div>
+        </div>
+    </div>
+
     <div id="game-container">
         <header>
             <h1>Líder Supremo: <span id="country-name" contenteditable="true">Meu País</span></h1>
@@ -78,26 +88,6 @@
                 </section>
             </div>
 
-            <section id="management-section">
-                <div id="rules-management">
-                    <h2>Regras e Decretos 📜</h2>
-                    <div class="rule-input">
-                        <input type="text" id="new-rule-text" placeholder="Digite uma nova regra (ex: Saúde gratuita para todos)">
-                        <button id="add-rule">Decretar</button>
-                    </div>
-                    <ul id="rules-list">
-                        <!-- Regras inseridas via JS -->
-                    </ul>
-                </div>
-
-                <div id="privatization-management">
-                    <h2>Privatização 🏢</h2>
-                    <p>Decida o que deve ser estatal ou privado:</p>
-                    <div id="privatization-list">
-                        <!-- Itens de privatização via JS -->
-                    </div>
-                </div>
-            </section>
         </main>
 
         <footer>
