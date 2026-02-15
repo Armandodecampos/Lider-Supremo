@@ -1,3 +1,5 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
 // Game State
 let gameState = {
     stats: {
@@ -166,48 +168,147 @@ function addMessageToChat(text, sender) {
     chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
-function processAIAdvisor(message) {
+async function processAIWithGemini(message) {
+    const apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) return null;
+
+    try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const systemPrompt = `Você é o Conselheiro Imperial do Líder Supremo em um simulador de governo complexo.
+Sua tarefa é analisar as ordens do Líder, aplicar impactos nas estatísticas do país e fornecer avisos realistas sobre a situação política.
+Estatísticas atuais: Saúde: ${gameState.stats.health}%, Educação: ${gameState.stats.education}%, Segurança: ${gameState.stats.security}%, Economia: ${gameState.stats.economy}%, Aprovação: ${gameState.stats.approval}%.
+Leis ativas: ${gameState.laws.join(', ') || 'Nenhuma'}.
+Turno atual: ${gameState.turn}.
+
+Regras de Impacto:
+- Seja realista: grandes mudanças custam caro ou afetam a aprovação.
+- Retorne SEMPRE um JSON válido no seguinte formato:
+{
+  "response": "Sua resposta textual ao jogador, profunda e política.",
+  "stats": { "health": delta, "education": delta, "security": delta, "economy": delta, "approval": delta },
+  "isLaw": true/false (se a mensagem criou uma nova lei ou decreto),
+  "report": "Um aviso ou relatório situacional curto se algo estiver crítico (opcional)"
+}
+Onde 'delta' é um número (ex: 5, -3.5, 0).`;
+
+        const result = await model.generateContent([systemPrompt, message]);
+        const responseText = result.response.text();
+
+        // Find JSON in response (Gemini sometimes adds markdown blocks)
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
+        }
+        return null;
+    } catch (error) {
+        console.error("Erro na API Gemini:", error);
+        return null;
+    }
+}
+
+async function generateSituationReport() {
+    const apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) return;
+
+    try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const systemPrompt = `Você é o Analista de Inteligência do Líder Supremo.
+Analise o estado atual do país e forneça um relatório situacional curto (máximo 2 parágrafos).
+Destaque problemas, avisos ou informações importantes.
+Estatísticas atuais: Saúde: ${gameState.stats.health}%, Educação: ${gameState.stats.education}%, Segurança: ${gameState.stats.security}%, Economia: ${gameState.stats.economy}%, Aprovação: ${gameState.stats.approval}%.
+Leis ativas: ${gameState.laws.join(', ') || 'Nenhuma'}.
+
+Formato de resposta: JSON
+{
+  "report": "Texto do seu relatório aqui."
+}`;
+
+        const result = await model.generateContent(systemPrompt);
+        const responseText = result.response.text();
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const data = JSON.parse(jsonMatch[0]);
+            addMessageToChat(`📋 RELATÓRIO DE ESTADO (Mês ${gameState.turn}): ${data.report}`, 'advisor');
+        }
+    } catch (error) {
+        console.error("Erro ao gerar relatório:", error);
+    }
+}
+
+async function processAIAdvisor(message) {
     const lowerMessage = message.toLowerCase();
 
-    // Detect Law/Rule creation
-    const lawKeywords = ['lei', 'decreto', 'proibir', 'aprovar', 'liberar', 'taxar', 'investir', 'ordeno', 'quero'];
-    const isLaw = lawKeywords.some(kw => lowerMessage.includes(kw));
+    // Try Gemini first
+    const geminiResponse = await processAIWithGemini(message);
 
-    if (isLaw) {
-        gameState.laws.push(message);
-    }
-
-    let matchedKeywords = [];
-    let consequenceText = "";
-
-    keywords.forEach(k => {
-        if (lowerMessage.includes(k.word)) {
-            for (let stat in k.stats) {
-                gameState.stats[stat] += k.stats[stat];
+    if (geminiResponse) {
+        // Apply stats from Gemini
+        if (geminiResponse.stats) {
+            for (let stat in geminiResponse.stats) {
+                if (gameState.stats[stat] !== undefined) {
+                    gameState.stats[stat] += geminiResponse.stats[stat];
+                }
             }
-            matchedKeywords.push(k.word);
-            if (k.consequence) consequenceText = k.consequence;
         }
-    });
 
-    let response = "";
-    if (matchedKeywords.length > 0) {
-        response = `Entendido, Líder. Apliquei as medidas solicitadas.`;
-        if (consequenceText) {
-            response += ` No entanto, surgiu uma consequência: ${consequenceText}`;
+        // Check if it's a law
+        if (geminiResponse.isLaw) {
+            gameState.laws.push(message);
         }
-    } else if (isLaw) {
-        response = "Decreto anotado, Líder. Embora eu não tenha projeções exatas, sua vontade será cumprida.";
-        // Generic impact for unspecified laws
-        gameState.stats.approval += 1;
-        gameState.stats.economy -= 0.5;
+
+        addMessageToChat(geminiResponse.response, 'advisor');
+        if (geminiResponse.report) {
+            setTimeout(() => addMessageToChat(`📢 RELATÓRIO: ${geminiResponse.report}`, 'advisor'), 1000);
+        }
     } else {
-        response = "Entendo sua visão, Líder Supremo. Vou analisar como podemos integrar isso em nossa estratégia de governo.";
+        // Fallback to keyword engine
+        const lawKeywords = ['lei', 'decreto', 'proibir', 'aprovar', 'liberar', 'taxar', 'investir', 'ordeno', 'quero'];
+        const isLaw = lawKeywords.some(kw => lowerMessage.includes(kw));
+
+        if (isLaw) {
+            gameState.laws.push(message);
+        }
+
+        let matchedKeywords = [];
+        let consequenceText = "";
+
+        keywords.forEach(k => {
+            if (lowerMessage.includes(k.word)) {
+                for (let stat in k.stats) {
+                    gameState.stats[stat] += k.stats[stat];
+                }
+                matchedKeywords.push(k.word);
+                if (k.consequence) consequenceText = k.consequence;
+            }
+        });
+
+        let response = "";
+        if (matchedKeywords.length > 0) {
+            response = `Entendido, Líder. (Modo Offline) Apliquei as medidas solicitadas.`;
+            if (consequenceText) {
+                response += ` No entanto: ${consequenceText}`;
+            }
+        } else if (isLaw) {
+            response = "Decreto anotado, Líder. (Modo Offline) Embora eu não tenha projeções exatas, sua vontade será cumprida.";
+            gameState.stats.approval += 1;
+            gameState.stats.economy -= 0.5;
+        } else {
+            response = "Entendo sua visão, Líder Supremo. (Modo Offline) Vou analisar como podemos integrar isso em nossa estratégia.";
+        }
+        addMessageToChat(response, 'advisor');
     }
 
-    addMessageToChat(response, 'advisor');
     recordHistory();
     updateUI();
+
+    // Proactive reports every 3 turns
+    if (gameState.turn % 3 === 0) {
+        setTimeout(generateSituationReport, 2000);
+    }
 }
 
 function sendChatMessage() {
@@ -266,6 +367,34 @@ window.onload = () => {
     window.addEventListener('click', (event) => {
         if (event.target == lawsModal) {
             lawsModal.classList.add('hidden');
+        }
+    });
+
+    // Settings Modal Listeners
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsBtn = document.getElementById('settings-btn');
+    const closeSettings = document.getElementById('close-settings');
+    const saveSettings = document.getElementById('save-settings');
+    const apiKeyInput = document.getElementById('api-key-input');
+
+    settingsBtn.addEventListener('click', () => {
+        apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+        settingsModal.classList.remove('hidden');
+    });
+
+    closeSettings.addEventListener('click', () => {
+        settingsModal.classList.add('hidden');
+    });
+
+    saveSettings.addEventListener('click', () => {
+        localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
+        alert('Configurações salvas!');
+        settingsModal.classList.add('hidden');
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target == settingsModal) {
+            settingsModal.classList.add('hidden');
         }
     });
 };
