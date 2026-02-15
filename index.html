@@ -14,6 +14,16 @@
     </script>
 </head>
 <body>
+    <div id="setup-modal" class="modal">
+        <div class="modal-content">
+            <h2>Bem-vindo, Líder Supremo 🫡</h2>
+            <p>Para assumir o comando e iniciar sua jornada, é obrigatório inserir sua Chave de API do Gemini:</p>
+            <input type="password" id="setup-api-key-input" placeholder="Cole sua chave aqui...">
+            <button id="start-game" class="btn-primary">Iniciar Governo</button>
+            <p class="small">Sua chave é salva apenas localmente no seu navegador e é necessária para que seu conselheiro funcione.</p>
+        </div>
+    </div>
+
     <div id="feedback-modal" class="modal hidden">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
@@ -45,7 +55,7 @@
         </div>
     </div>
 
-    <div id="game-container">
+    <div id="game-container" class="hidden">
         <header>
             <div class="header-main">
                 <h1>Líder Supremo: <span id="country-name" contenteditable="true">Meu País</span></h1>
@@ -56,44 +66,20 @@
 
         <main>
             <section id="stats-dashboard">
-                <div class="stat-card" title="Saúde">
-                    <span class="icon">🏥</span>
-                    <div class="stat-info">
-                        <label>Saúde</label>
-                        <div class="progress-bar-bg"><div id="stat-health" class="progress-fill" style="width: 50%;"></div></div>
-                        <span id="value-health">50%</span>
+                <div class="stat-card approval" title="Status do País">
+                    <div class="main-stat">
+                        <span class="icon">✊</span>
+                        <div class="stat-info">
+                            <label>Aprovação Geral</label>
+                            <div class="progress-bar-bg"><div id="stat-approval" class="progress-fill" style="width: 50%;"></div></div>
+                            <span id="value-approval">50%</span>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-card" title="Educação">
-                    <span class="icon">🎓</span>
-                    <div class="stat-info">
-                        <label>Educação</label>
-                        <div class="progress-bar-bg"><div id="stat-education" class="progress-fill" style="width: 50%;"></div></div>
-                        <span id="value-education">50%</span>
-                    </div>
-                </div>
-                <div class="stat-card" title="Segurança">
-                    <span class="icon">🛡️</span>
-                    <div class="stat-info">
-                        <label>Segurança</label>
-                        <div class="progress-bar-bg"><div id="stat-security" class="progress-fill" style="width: 50%;"></div></div>
-                        <span id="value-security">50%</span>
-                    </div>
-                </div>
-                <div class="stat-card" title="Economia">
-                    <span class="icon">💰</span>
-                    <div class="stat-info">
-                        <label>Economia</label>
-                        <div class="progress-bar-bg"><div id="stat-economy" class="progress-fill" style="width: 50%;"></div></div>
-                        <span id="value-economy">50%</span>
-                    </div>
-                </div>
-                <div class="stat-card approval" title="Aprovação Geral">
-                    <span class="icon">✊</span>
-                    <div class="stat-info">
-                        <label>Aprovação Geral</label>
-                        <div class="progress-bar-bg"><div id="stat-approval" class="progress-fill" style="width: 50%;"></div></div>
-                        <span id="value-approval">50%</span>
+                    <div class="sub-stats">
+                        <div class="sub-stat" title="Saúde">🏥 <span id="value-health">50%</span></div>
+                        <div class="sub-stat" title="Educação">🎓 <span id="value-education">50%</span></div>
+                        <div class="sub-stat" title="Segurança">🛡️ <span id="value-security">50%</span></div>
+                        <div class="sub-stat" title="Economia">💰 <span id="value-economy">50%</span></div>
                     </div>
                 </div>
                 <button id="laws-btn" class="stat-card">
