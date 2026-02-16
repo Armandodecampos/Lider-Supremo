@@ -1,5 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 // Game State
 let gameState = {
     simulationMode: false,
@@ -46,6 +44,10 @@ function updateUI() {
             const text = document.getElementById(`value-${stat}`);
             if (bar) bar.style.width = `${val}%`;
             if (text) text.textContent = `${Math.round(val)}%`;
+
+            // Visual feedback for sub-stats if low
+            if (text && val < 30) text.style.color = 'red';
+            else if (text) text.style.color = 'inherit';
         }
     } catch (e) {
         console.error("Erro ao atualizar UI:", e);
@@ -184,13 +186,30 @@ function addMessageToChat(text, sender) {
     chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
+async function callGeminiAPI(apiKey, prompt) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
+
 async function testGeminiConnection(key) {
     if (!key) return { success: false, message: "Chave vazia." };
     try {
-        const genAI = new GoogleGenerativeAI(key);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent("Olá, responda apenas 'OK'.");
-        if (result.response.text()) {
+        const text = await callGeminiAPI(key, "Olá, responda apenas 'OK'.");
+        if (text) {
             return { success: true, message: "Conexão bem-sucedida!" };
         }
         return { success: false, message: "Resposta vazia da API." };
@@ -208,9 +227,6 @@ async function processAIWithGemini(message) {
     if (!apiKey) return { error: "Chave de API não encontrada." };
 
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
         const systemPrompt = `Você é o Conselheiro Imperial do Líder Supremo em um simulador de governo complexo.
 Sua tarefa é analisar as ordens do Líder, aplicar impactos nas estatísticas do país e fornecer avisos realistas sobre a situação política.
 Estatísticas atuais: Saúde: ${gameState.stats.health}%, Educação: ${gameState.stats.education}%, Segurança: ${gameState.stats.security}%, Economia: ${gameState.stats.economy}%, Aprovação: ${gameState.stats.approval}%.
@@ -228,8 +244,7 @@ Regras de Impacto:
 }
 Onde 'delta' é um número (ex: 5, -3.5, 0).`;
 
-        const result = await model.generateContent([systemPrompt, message]);
-        const responseText = result.response.text();
+        const responseText = await callGeminiAPI(apiKey, `${systemPrompt}\n\nComando do Líder: ${message}`);
 
         // Find JSON in response (Gemini sometimes adds markdown blocks)
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
@@ -257,9 +272,6 @@ async function generateSituationReport() {
     if (!apiKey) return;
 
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
         const systemPrompt = `Você é o Analista de Inteligência do Líder Supremo.
 Analise o estado atual do país e forneça um relatório situacional curto (máximo 2 parágrafos).
 Destaque problemas, avisos ou informações importantes.
@@ -271,8 +283,7 @@ Retorne APENAS JSON:
   "report": "Texto do seu relatório aqui."
 }`;
 
-        const result = await model.generateContent(systemPrompt);
-        const responseText = result.response.text();
+        const responseText = await callGeminiAPI(apiKey, systemPrompt);
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             try {
@@ -375,16 +386,20 @@ function sendChatMessage() {
 function checkApiKey() {
     try {
         const apiKey = localStorage.getItem('gemini_api_key');
+        const setupModal = document.getElementById('setup-modal');
+        const gameContainer = document.getElementById('game-container');
+
         if (apiKey && apiKey.trim() !== '') {
-            gameState.simulationMode = false;
+            if (setupModal) setupModal.classList.add('hidden');
+            if (gameContainer) gameContainer.classList.remove('hidden');
             return true;
         } else {
-            gameState.simulationMode = true;
+            if (setupModal) setupModal.classList.remove('hidden');
+            if (gameContainer) gameContainer.classList.add('hidden');
             return false;
         }
     } catch (e) {
         console.error("Erro ao verificar API Key:", e);
-        gameState.simulationMode = true;
         return false;
     }
 }
@@ -393,14 +408,26 @@ window.init = init;
 function init() {
     console.log("Iniciando Simulador Líder Supremo...");
 
+    const startGameBtn = document.getElementById('start-game');
+    const setupApiKeyInput = document.getElementById('setup-api-key-input');
+
+    if (startGameBtn && setupApiKeyInput) {
+        startGameBtn.addEventListener('click', () => {
+            const key = setupApiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+                if (checkApiKey()) {
+                    addMessageToChat("Bem-vindo, Líder Supremo. Seu conselheiro IA está online.", 'advisor');
+                    updateUI();
+                }
+            } else {
+                alert("Por favor, insira uma chave de API válida para continuar.");
+            }
+        });
+    }
+
     checkApiKey();
     updateUI();
-
-    if (gameState.simulationMode) {
-        addMessageToChat("Bem-vindo, Líder Supremo. O sistema está operando com IA Local (Genérica). Para usar inteligência avançada, insira uma chave de API nas configurações.", 'advisor');
-    } else {
-        addMessageToChat("Bem-vindo, Líder Supremo. Seu conselheiro IA está online e pronto para agir.", 'advisor');
-    }
 
     // Other Listeners
     try {
