@@ -175,6 +175,30 @@ main {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
+.advisor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.advisor-header h2 {
+    margin: 0;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+    background: #7f8c8d;
+    color: white;
+    font-weight: bold;
+}
+
+.status-badge.active {
+    background: #27ae60;
+}
+
 #chat-history {
     height: 300px;
     overflow-y: auto;
