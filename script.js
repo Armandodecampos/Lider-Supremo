@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Game State
 let gameState = {
+    simulationMode: false,
     stats: {
         health: 50,
         education: 50,
@@ -40,8 +41,26 @@ function updateUI() {
 }
 
 
+const keywords = [
+    { word: 'saúde', stats: { health: 8, economy: -4, approval: 5 }, response: "Entendido. Aumentamos o investimento em hospitais e saneamento." },
+    { word: 'hospital', stats: { health: 10, economy: -5, approval: 5 }, response: "Novos hospitais inaugurados. A capacidade de atendimento aumentou." },
+    { word: 'escola', stats: { education: 8, economy: -4, approval: 5 }, response: "Escolas reformadas. O futuro da nação agradece." },
+    { word: 'educação', stats: { education: 10, economy: -5, approval: 5 }, response: "Certo. Novas escolas e capacitação de professores em andamento." },
+    { word: 'segurança', stats: { security: 8, economy: -4, approval: 5 }, response: "Medida aplicada. Reforçamos o policiamento e as fronteiras." },
+    { word: 'polícia', stats: { security: 10, economy: -5, approval: 5 }, response: "Aumento de efetivo policial nas ruas para garantir a ordem." },
+    { word: 'arma', stats: { security: 5, approval: -5 }, response: "Flexibilização/restrição de armas processada conforme seu desejo." },
+    { word: 'imposto', stats: { economy: 10, approval: -10 }, response: "Impostos alterados. O tesouro agradece, mas o povo reclama." },
+    { word: 'taxa', stats: { economy: 8, approval: -8 }, response: "Novas taxas aplicadas aos setores produtivos." },
+    { word: 'grátis', stats: { approval: 10, economy: -10 }, response: "Serviços gratuitos distribuídos. Popularidade em alta, caixa em baixa." },
+    { word: 'proibir', stats: { security: 5, approval: -5 }, response: "Proibição decretada. A ordem será mantida a qualquer custo." },
+    { word: 'liberdade', stats: { approval: 10, security: -5 }, response: "Mais liberdades civis garantidas. O povo comemora nas ruas." },
+    { word: 'privatizar', stats: { economy: 12, approval: -8 }, response: "Empresas vendidas ao setor privado. Eficiência aumentada, mas com protestos." },
+    { word: 'estatizar', stats: { economy: -12, approval: 8 }, response: "O Estado assume o controle. O povo aprova a soberania, mas as contas pesam." },
+    { word: 'trabalho', stats: { economy: 5, approval: 2 }, response: "Reformas trabalhistas processadas para incentivar o emprego." }
+];
+
 function applyLawsPassiveImpact() {
-    // Passive impact could be implemented here in the future
+    // Passive impact remains a placeholder for now
 }
 
 function recordHistory() {
@@ -204,7 +223,7 @@ Onde 'delta' é um número (ex: 5, -3.5, 0).`;
         if (error.message.includes("API_KEY_INVALID")) errorMsg = "Sua Chave de API é inválida.";
         if (error.message.includes("429")) errorMsg = "Limite de requisições excedido. Aguarde um momento.";
         if (error.message.includes("safety")) errorMsg = "A resposta foi bloqueada pelos filtros de segurança da IA.";
-        return { error: errorMsg };
+        return { error: errorMsg, rawError: error.toString() };
     }
 }
 
@@ -243,7 +262,42 @@ Retorne APENAS JSON:
     }
 }
 
+function processSimulationAdvisor(message) {
+    const lowerMessage = message.toLowerCase();
+    let matched = false;
+    let response = "Entendo sua visão, Líder Supremo. (Modo Simulado) Vou analisar como podemos integrar isso em nossa estratégia.";
+
+    for (const k of keywords) {
+        if (lowerMessage.includes(k.word)) {
+            for (let stat in k.stats) {
+                gameState.stats[stat] += k.stats[stat];
+            }
+            response = k.response + " (Modo Simulado)";
+            matched = true;
+            break;
+        }
+    }
+
+    if (!matched) {
+        const lawKeywords = ['lei', 'decreto', 'proibir', 'aprovar', 'liberar', 'taxar', 'investir', 'ordeno', 'quero'];
+        if (lawKeywords.some(kw => lowerMessage.includes(kw))) {
+            gameState.laws.push(message);
+            gameState.stats.approval += 1;
+            response = "Seu decreto foi registrado e será cumprido. (Modo Simulado)";
+        }
+    }
+
+    addMessageToChat(response, 'advisor');
+    recordHistory();
+    updateUI();
+}
+
 async function processAIAdvisor(message) {
+    if (gameState.simulationMode) {
+        processSimulationAdvisor(message);
+        return;
+    }
+
     // Try Gemini
     const result = await processAIWithGemini(message);
 
@@ -269,7 +323,10 @@ async function processAIAdvisor(message) {
     } else {
         const msg = result ? result.error : "Erro desconhecido no conselheiro.";
         addMessageToChat(`🚫 FALHA NO CONSELHEIRO: ${msg}`, 'advisor');
-        addMessageToChat("Dica: Verifique se sua chave de API está correta nas configurações (ícone de engrenagem).", 'advisor');
+        if (result && result.rawError) {
+             addMessageToChat(`Detalhes técnicos: ${result.rawError}`, 'advisor');
+        }
+        addMessageToChat("Dica: Verifique sua chave nas configurações ou limpe-a para usar o Modo Simulado.", 'advisor');
     }
 
     recordHistory();
@@ -300,6 +357,7 @@ function checkApiKey() {
         if (apiKey && apiKey.trim() !== '') {
             if (setupModal) setupModal.classList.add('hidden');
             if (gameContainer) gameContainer.classList.remove('hidden');
+            gameState.simulationMode = false;
             return true;
         } else {
             if (setupModal) setupModal.classList.remove('hidden');
@@ -343,6 +401,17 @@ function init() {
                 alert(res.message);
                 testBtn.disabled = false;
                 testBtn.textContent = "Testar Chave";
+            });
+        }
+
+        const skipBtn = document.getElementById('skip-setup');
+        if (skipBtn) {
+            skipBtn.addEventListener('click', () => {
+                gameState.simulationMode = true;
+                document.getElementById('setup-modal').classList.add('hidden');
+                document.getElementById('game-container').classList.remove('hidden');
+                addMessageToChat("Bem-vindo, Líder Supremo. Iniciamos em MODO SIMULADO (sem IA). Você pode inserir uma chave nas configurações a qualquer momento.", 'advisor');
+                updateUI();
             });
         }
     }
@@ -430,9 +499,11 @@ function init() {
 
         if (saveSettings && settingsModal) {
             saveSettings.addEventListener('click', () => {
-                localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
+                const key = apiKeyInput.value.trim();
+                localStorage.setItem('gemini_api_key', key);
                 alert('Configurações salvas!');
                 settingsModal.classList.add('hidden');
+                if (key) gameState.simulationMode = false;
                 checkApiKey();
             });
         }
