@@ -117,9 +117,10 @@ main {
 .sub-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 5px;
+    gap: 8px;
     border-top: 1px solid #eee;
     padding-top: 10px;
+    margin-top: 5px;
 }
 
 .sub-stat {
