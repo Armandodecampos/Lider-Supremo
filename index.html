@@ -21,9 +21,18 @@
             <input type="password" id="setup-api-key-input" placeholder="Cole sua chave aqui...">
             <button id="start-game" class="btn-primary">Iniciar Governo</button>
             <button id="test-key-setup" class="btn-secondary" style="margin-top: 5px; width: 100%;">Testar Chave</button>
-            <p class="small">Sua chave é salva apenas localmente no seu navegador e é necessária para que seu conselheiro funcione.</p>
+            <button id="skip-setup" class="btn-secondary" style="margin-top: 5px; width: 100%; background-color: #7f8c8d;">Pular (Modo Simulado)</button>
+            <p class="small">Sua chave é salva apenas localmente no seu navegador. Se não tiver uma, use o Modo Simulado.</p>
             <div id="no-script-error" class="error-msg" style="color: red; margin-top: 10px; display: none;">
                 ⚠️ O sistema não pôde carregar o script do conselheiro. Se você abriu o arquivo diretamente no navegador, tente usar um servidor local (ex: Live Server) ou um navegador diferente.
+            </div>
+            <div class="connection-tips" style="font-size: 0.75rem; color: #666; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+                <strong>Dicas se a chave não funcionar:</strong>
+                <ul style="padding-left: 20px; margin: 5px 0;">
+                    <li>Verifique se há espaços extras ao colar.</li>
+                    <li>O Gemini pode estar instável em algumas regiões.</li>
+                    <li>Se usar 'file://', o navegador pode bloquear a conexão. Tente um servidor local.</li>
+                </ul>
             </div>
         </div>
     </div>
