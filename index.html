@@ -14,38 +14,6 @@
     </script>
 </head>
 <body>
-    <div id="setup-modal" class="modal">
-        <div class="modal-content">
-            <h2>Bem-vindo, Líder Supremo 🫡</h2>
-            <p>Para assumir o comando e iniciar sua jornada, é obrigatório inserir sua Chave de API do Gemini:</p>
-            <input type="password" id="setup-api-key-input" placeholder="Cole sua chave aqui...">
-            <button id="start-game" class="btn-primary">Iniciar Governo</button>
-            <button id="test-key-setup" class="btn-secondary" style="margin-top: 5px; width: 100%;">Testar Chave</button>
-            <button id="skip-setup" class="btn-secondary" style="margin-top: 5px; width: 100%; background-color: #7f8c8d;">Pular (Modo Simulado)</button>
-            <p class="small">Sua chave é salva apenas localmente no seu navegador. Se não tiver uma, use o Modo Simulado.</p>
-            <div id="no-script-error" class="error-msg" style="color: red; margin-top: 10px; display: none;">
-                ⚠️ O sistema não pôde carregar o script do conselheiro. Se você abriu o arquivo diretamente no navegador, tente usar um servidor local (ex: Live Server) ou um navegador diferente.
-            </div>
-            <div class="connection-tips" style="font-size: 0.75rem; color: #666; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
-                <strong>Dicas se a chave não funcionar:</strong>
-                <ul style="padding-left: 20px; margin: 5px 0;">
-                    <li>Verifique se há espaços extras ao colar.</li>
-                    <li>O Gemini pode estar instável em algumas regiões.</li>
-                    <li>Se usar 'file://', o navegador pode bloquear a conexão. Tente um servidor local.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <script>
-        // Diagnostic inline script
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                if (typeof init === 'undefined' && !window.suppressScriptError) {
-                    document.getElementById('no-script-error').style.display = 'block';
-                }
-            }, 1500);
-        });
-    </script>
 
     <div id="feedback-modal" class="modal hidden">
         <div class="modal-content">
@@ -79,7 +47,7 @@
         </div>
     </div>
 
-    <div id="game-container" class="hidden">
+    <div id="game-container">
         <header>
             <div class="header-main">
                 <h1>Líder Supremo: <span id="country-name" contenteditable="true">Meu País</span></h1>
@@ -117,7 +85,10 @@
 
             <div class="middle-section">
                 <section id="ai-advisor">
-                    <h2>Conselheiro IA 🤖</h2>
+                    <div class="advisor-header">
+                        <h2>Conselheiro IA 🤖</h2>
+                        <span id="ai-status" class="status-badge">IA Genérica</span>
+                    </div>
                     <div id="ai-content">
                         <div id="chat-history">
                             <div class="message advisor-message">Olá, Líder Supremo. Como posso ajudá-lo hoje?</div>

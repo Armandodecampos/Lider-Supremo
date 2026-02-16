@@ -26,6 +26,18 @@ let gameState = {
 // Update UI
 function updateUI() {
     try {
+        // AI Status
+        const statusBadge = document.getElementById('ai-status');
+        if (statusBadge) {
+            if (gameState.simulationMode) {
+                statusBadge.textContent = "IA Genérica";
+                statusBadge.classList.remove('active');
+            } else {
+                statusBadge.textContent = "IA Gemini Ativa";
+                statusBadge.classList.add('active');
+            }
+        }
+
         // Stats
         for (let stat in gameState.stats) {
             const val = Math.max(0, Math.min(100, gameState.stats[stat]));
@@ -42,25 +54,38 @@ function updateUI() {
 
 
 const keywords = [
-    { word: 'saúde', stats: { health: 8, economy: -4, approval: 5 }, response: "Entendido. Aumentamos o investimento em hospitais e saneamento." },
-    { word: 'hospital', stats: { health: 10, economy: -5, approval: 5 }, response: "Novos hospitais inaugurados. A capacidade de atendimento aumentou." },
-    { word: 'escola', stats: { education: 8, economy: -4, approval: 5 }, response: "Escolas reformadas. O futuro da nação agradece." },
-    { word: 'educação', stats: { education: 10, economy: -5, approval: 5 }, response: "Certo. Novas escolas e capacitação de professores em andamento." },
-    { word: 'segurança', stats: { security: 8, economy: -4, approval: 5 }, response: "Medida aplicada. Reforçamos o policiamento e as fronteiras." },
-    { word: 'polícia', stats: { security: 10, economy: -5, approval: 5 }, response: "Aumento de efetivo policial nas ruas para garantir a ordem." },
-    { word: 'arma', stats: { security: 5, approval: -5 }, response: "Flexibilização/restrição de armas processada conforme seu desejo." },
-    { word: 'imposto', stats: { economy: 10, approval: -10 }, response: "Impostos alterados. O tesouro agradece, mas o povo reclama." },
-    { word: 'taxa', stats: { economy: 8, approval: -8 }, response: "Novas taxas aplicadas aos setores produtivos." },
-    { word: 'grátis', stats: { approval: 10, economy: -10 }, response: "Serviços gratuitos distribuídos. Popularidade em alta, caixa em baixa." },
-    { word: 'proibir', stats: { security: 5, approval: -5 }, response: "Proibição decretada. A ordem será mantida a qualquer custo." },
-    { word: 'liberdade', stats: { approval: 10, security: -5 }, response: "Mais liberdades civis garantidas. O povo comemora nas ruas." },
-    { word: 'privatizar', stats: { economy: 12, approval: -8 }, response: "Empresas vendidas ao setor privado. Eficiência aumentada, mas com protestos." },
-    { word: 'estatizar', stats: { economy: -12, approval: 8 }, response: "O Estado assume o controle. O povo aprova a soberania, mas as contas pesam." },
-    { word: 'trabalho', stats: { economy: 5, approval: 2 }, response: "Reformas trabalhistas processadas para incentivar o emprego." }
+    { word: 'saúde', stats: { health: 8, economy: -4, approval: 5 }, responses: ["Entendido. Aumentamos o investimento em hospitais e saneamento.", "Investimento em saúde priorizado conforme suas ordens.", "O sistema de saúde receberá o reforço necessário."] },
+    { word: 'hospital', stats: { health: 10, economy: -5, approval: 5 }, responses: ["Novos hospitais inaugurados. A capacidade de atendimento aumentou.", "Expansão da rede hospitalar iniciada.", "Hospitais equipados e prontos para servir."] },
+    { word: 'escola', stats: { education: 8, economy: -4, approval: 5 }, responses: ["Escolas reformadas. O futuro da nação agradece.", "Educação básica reforçada com novas unidades escolares.", "Ambiente escolar modernizado."] },
+    { word: 'educação', stats: { education: 10, economy: -5, approval: 5 }, responses: ["Certo. Novas escolas e capacitação de professores em andamento.", "Plano nacional de educação atualizado.", "Foco total na formação das próximas gerações."] },
+    { word: 'segurança', stats: { security: 8, economy: -4, approval: 5 }, responses: ["Medida aplicada. Reforçamos o policiamento e as fronteiras.", "Segurança pública intensificada em áreas críticas.", "A ordem será mantida com patrulhamento reforçado."] },
+    { word: 'polícia', stats: { security: 10, economy: -5, approval: 5 }, responses: ["Aumento de efetivo policial nas ruas para garantir a ordem.", "Forças policiais equipadas com nova tecnologia.", "Policiamento ostensivo expandido."] },
+    { word: 'arma', stats: { security: 5, approval: -5 }, responses: ["Flexibilização/restrição de armas processada conforme seu desejo.", "Nova política armamentista em vigor.", "Controle de armamentos ajustado."] },
+    { word: 'imposto', stats: { economy: 10, approval: -10 }, responses: ["Impostos alterados. O tesouro agradece, mas o povo reclama.", "Carga tributária ajustada para equilibrar as contas.", "Nova política fiscal implementada."] },
+    { word: 'taxa', stats: { economy: 8, approval: -8 }, responses: ["Novas taxas aplicadas aos setores produtivos.", "Ajuste tarifário processado.", "Taxação redistribuída conforme solicitado."] },
+    { word: 'grátis', stats: { approval: 10, economy: -10 }, responses: ["Serviços gratuitos distribuídos. Popularidade em alta, caixa em baixa.", "Bolsas e auxílios liberados para a população.", "O acesso universal foi garantido."] },
+    { word: 'proibir', stats: { security: 5, approval: -5 }, responses: ["Proibição decretada. A ordem será mantida a qualquer custo.", "Restrições severas aplicadas imediatamente.", "O que for proibido deixará de circular em nosso território."] },
+    { word: 'liberdade', stats: { approval: 10, security: -5 }, responses: ["Mais liberdades civis garantidas. O povo comemora nas ruas.", "Abertura política e social em andamento.", "Sua benevolência traz novos ares ao país."] },
+    { word: 'privatizar', stats: { economy: 12, approval: -8 }, responses: ["Empresas vendidas ao setor privado. Eficiência aumentada, mas com protestos.", "Desestatização acelerada para gerar caixa.", "O mercado assume o comando destas operações."] },
+    { word: 'estatizar', stats: { economy: -12, approval: 8 }, responses: ["O Estado assume o controle. O povo aprova a soberania, mas as contas pesam.", "Nacionalização de setores estratégicos concluída.", "A soberania nacional é reforçada com o controle estatal."] },
+    { word: 'trabalho', stats: { economy: 5, approval: 2 }, responses: ["Reformas trabalhistas processadas para incentivar o emprego.", "Novos postos de trabalho serão criados com este incentivo.", "O mercado de trabalho reage positivamente às suas ordens."] },
+    { word: 'exército', stats: { security: 12, economy: -6, approval: -2 }, responses: ["Forças Armadas em prontidão máxima.", "Modernização militar iniciada.", "Nossa defesa nunca foi tão forte."] },
+    { word: 'comida', stats: { approval: 8, health: 5, economy: -5 }, responses: ["Subsídios alimentares garantidos para evitar a fome.", "Segurança alimentar é agora prioridade nacional.", "O povo terá prato cheio, Líder."] },
+    { word: 'tecnologia', stats: { economy: 10, education: 5 }, responses: ["Investimento em polos tecnológicos aprovado.", "Inovação digital impulsionada pelo governo.", "O país entra na era da tecnologia de ponta."] }
 ];
 
 function applyLawsPassiveImpact() {
-    // Passive impact remains a placeholder for now
+    gameState.laws.forEach(law => {
+        const lowerLaw = law.toLowerCase();
+        keywords.forEach(k => {
+            if (lowerLaw.includes(k.word)) {
+                // Laws have a smaller per-turn impact (10% of immediate impact)
+                for (let stat in k.stats) {
+                    gameState.stats[stat] += k.stats[stat] * 0.1;
+                }
+            }
+        });
+    });
 }
 
 function recordHistory() {
@@ -272,7 +297,8 @@ function processSimulationAdvisor(message) {
             for (let stat in k.stats) {
                 gameState.stats[stat] += k.stats[stat];
             }
-            response = k.response + " (Modo Simulado)";
+            const randomIndex = Math.floor(Math.random() * k.responses.length);
+            response = k.responses[randomIndex] + " (Modo Simulado)";
             matched = true;
             break;
         }
@@ -322,11 +348,9 @@ async function processAIAdvisor(message) {
         }
     } else {
         const msg = result ? result.error : "Erro desconhecido no conselheiro.";
-        addMessageToChat(`🚫 FALHA NO CONSELHEIRO: ${msg}`, 'advisor');
-        if (result && result.rawError) {
-             addMessageToChat(`Detalhes técnicos: ${result.rawError}`, 'advisor');
-        }
-        addMessageToChat("Dica: Verifique sua chave nas configurações ou limpe-a para usar o Modo Simulado.", 'advisor');
+        console.warn(`Falha na IA: ${msg}. Ativando Modo Simulado temporariamente.`);
+        addMessageToChat(`⚠️ IA Indisponível: ${msg}. Ativando modo de segurança (IA Genérica)...`, 'advisor');
+        processSimulationAdvisor(message);
     }
 
     recordHistory();
@@ -351,21 +375,16 @@ function sendChatMessage() {
 function checkApiKey() {
     try {
         const apiKey = localStorage.getItem('gemini_api_key');
-        const setupModal = document.getElementById('setup-modal');
-        const gameContainer = document.getElementById('game-container');
-
         if (apiKey && apiKey.trim() !== '') {
-            if (setupModal) setupModal.classList.add('hidden');
-            if (gameContainer) gameContainer.classList.remove('hidden');
             gameState.simulationMode = false;
             return true;
         } else {
-            if (setupModal) setupModal.classList.remove('hidden');
-            if (gameContainer) gameContainer.classList.add('hidden');
+            gameState.simulationMode = true;
             return false;
         }
     } catch (e) {
         console.error("Erro ao verificar API Key:", e);
+        gameState.simulationMode = true;
         return false;
     }
 }
@@ -374,50 +393,14 @@ window.init = init;
 function init() {
     console.log("Iniciando Simulador Líder Supremo...");
 
-    // Setup Modal logic - Attached as early as possible
-    const startGameBtn = document.getElementById('start-game');
-    const setupApiKeyInput = document.getElementById('setup-api-key-input');
-
-    if (startGameBtn && setupApiKeyInput) {
-        startGameBtn.addEventListener('click', () => {
-            const key = setupApiKeyInput.value.trim();
-            if (key) {
-                localStorage.setItem('gemini_api_key', key);
-                if (checkApiKey()) {
-                    addMessageToChat("Bem-vindo, Líder Supremo. Sou seu conselheiro IA. O país aguarda suas ordens.", 'advisor');
-                    updateUI();
-                }
-            } else {
-                alert("Por favor, insira uma chave de API válida para continuar.");
-            }
-        });
-
-        const testBtn = document.getElementById('test-key-setup');
-        if (testBtn) {
-            testBtn.addEventListener('click', async () => {
-                testBtn.disabled = true;
-                testBtn.textContent = "Testando...";
-                const res = await testGeminiConnection(setupApiKeyInput.value.trim());
-                alert(res.message);
-                testBtn.disabled = false;
-                testBtn.textContent = "Testar Chave";
-            });
-        }
-
-        const skipBtn = document.getElementById('skip-setup');
-        if (skipBtn) {
-            skipBtn.addEventListener('click', () => {
-                gameState.simulationMode = true;
-                document.getElementById('setup-modal').classList.add('hidden');
-                document.getElementById('game-container').classList.remove('hidden');
-                addMessageToChat("Bem-vindo, Líder Supremo. Iniciamos em MODO SIMULADO (sem IA). Você pode inserir uma chave nas configurações a qualquer momento.", 'advisor');
-                updateUI();
-            });
-        }
-    }
-
     checkApiKey();
     updateUI();
+
+    if (gameState.simulationMode) {
+        addMessageToChat("Bem-vindo, Líder Supremo. O sistema está operando com IA Local (Genérica). Para usar inteligência avançada, insira uma chave de API nas configurações.", 'advisor');
+    } else {
+        addMessageToChat("Bem-vindo, Líder Supremo. Seu conselheiro IA está online e pronto para agir.", 'advisor');
+    }
 
     // Other Listeners
     try {
